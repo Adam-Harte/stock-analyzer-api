@@ -144,6 +144,48 @@ export const getYahooFinanceBalanceSheetData = async (symbol: string) => {
   };
 };
 
+export const getWsjGrowthRatesData = async (symbol: string) => {
+  const { data } = await axios.get(`https://www.wsj.com/market-data/quotes/${symbol}/company-people`);
+  const $ = cheerio.load(data);
+
+  const spans = $('span', data);
+  let revenueGrowth: string | undefined;
+  let incomeGrowth: string | undefined;
+  let epsGrowth: string | undefined;
+  let capitalSpendingGrowth: string | undefined;
+  let grossMarginGrowth: string | undefined;
+  let cashFlowGrowth: string | undefined;
+  spans.each((i, e) => {
+    revenueGrowth = getRevenueGrowth($, e, revenueGrowth);
+
+    incomeGrowth = getIncomeGrowth($, e, incomeGrowth);
+
+    epsGrowth = getEpsGrowth($, e, epsGrowth);
+
+    capitalSpendingGrowth = getCapitalSpendingGrowth($, e, capitalSpendingGrowth);
+
+    grossMarginGrowth = getGrossMarginGrowth($, e, grossMarginGrowth);
+
+    cashFlowGrowth = getCashFlowGrowth($, e, cashFlowGrowth);
+  });
+
+  console.log('revenue growth', revenueGrowth);
+  console.log('income growth', incomeGrowth);
+  console.log('eps growth', epsGrowth);
+  console.log('capital spending growth', capitalSpendingGrowth);
+  console.log('gross margin growth', grossMarginGrowth);
+  console.log('cash flow growth', cashFlowGrowth);
+
+  return {
+    revenueGrowth: revenueGrowth || '-',
+    incomeGrowth: incomeGrowth || '-',
+    epsGrowth: epsGrowth || '-',
+    capitalSpendingGrowth: capitalSpendingGrowth || '-',
+    grossMarginGrowth: grossMarginGrowth || '-',
+    cashFlowGrowth: cashFlowGrowth || '-'
+  };
+};
+
 export const getBenjaminGrahamIntrinsicValue = (eps: number, growthRate: number) => {
   const initialValue = eps * (8.5 + 2 * growthRate);
   return initialValue * 4.4 / 2.3;
@@ -158,6 +200,48 @@ export const getMetricBasedIntrinsicValue = (eps: number, growthRate: number, pe
   const initialValue = eps * (1 + (growthRate / 100)) * pe;
   return initialValue;
 };
+
+function getCashFlowGrowth($: cheerio.Root, e: cheerio.Element, cashFlowGrowth: string | undefined) {
+  if ($(e).text().trim() === 'Cash Flow') {
+    cashFlowGrowth = $(e).next().text();
+  }
+  return cashFlowGrowth;
+}
+
+function getGrossMarginGrowth($: cheerio.Root, e: cheerio.Element, grossMarginGrowth: string | undefined) {
+  if ($(e).text().trim() === 'Gross Margin') {
+    grossMarginGrowth = $(e).next().text();
+  }
+  return grossMarginGrowth;
+}
+
+function getCapitalSpendingGrowth($: cheerio.Root, e: cheerio.Element, capitalSpendingGrowth: string | undefined) {
+  if ($(e).text().trim() === 'Capital Spending') {
+    capitalSpendingGrowth = $(e).next().text();
+  }
+  return capitalSpendingGrowth;
+}
+
+function getEpsGrowth($: cheerio.Root, e: cheerio.Element, epsGrowth: string | undefined) {
+  if ($(e).text().trim() === 'Earnings Per Share') {
+    epsGrowth = $(e).next().text();
+  }
+  return epsGrowth;
+}
+
+function getIncomeGrowth($: cheerio.Root, e: cheerio.Element, incomeGrowth: string | undefined) {
+  if ($(e).text().trim() === 'Net Income') {
+    incomeGrowth = $(e).next().text();
+  }
+  return incomeGrowth;
+}
+
+function getRevenueGrowth($: cheerio.Root, e: cheerio.Element, revenueGrowth: string | undefined) {
+  if ($(e).text().trim() === 'Revenue') {
+    revenueGrowth = $(e).next().text();
+  }
+  return revenueGrowth;
+}
 
 function getLiabilities($: cheerio.Root, e: cheerio.Element, liabilities: any) {
   if ($(e).attr('title') === "Total liabilities") {
